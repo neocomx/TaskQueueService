@@ -26,3 +26,7 @@ type Task struct {
 type Processor interface {
 	Process(ctx context.Context, t *Task) error
 }
+
+func (t *Task) Snapshot() Task {
+	return *t
+}

@@ -46,23 +46,25 @@ func (p *Pool) runWorker(id int) {
 	for t := range p.queue {
 		fmt.Printf("[Worker-%d] processing task %s\n", id, t.ID)
 
-		t.Status = task.StatusProcessing
-		p.store.Update(t)
+		taskID := t.ID
+
+		local := *t
+		local.Status = task.StatusProcessing
+		p.store.Update(&local)
 
 		ctx, cancel := context.WithTimeout(context.Background(), p.timeout)
-
-		err := p.processor.Process(ctx, t)
+		err := p.processor.Process(ctx, &local)
 		cancel()
 
 		if err != nil {
-			t.Status = task.StatusFailed
-			t.Error = err.Error()
+			local.Status = task.StatusFailed
+			local.Error = err.Error()
 		} else {
-			t.Status = task.StatusDone
+			local.Status = task.StatusDone
 		}
 
-		p.store.Update(t)
-		fmt.Printf("[worker-%d] finished task %s -> %s \n", id, t.ID, t.Status)
+		p.store.Update(&local)
+		fmt.Printf("[worker-%d] finished task %s -> %s\n", id, taskID, local.Status)
 	}
 }
 
